@@ -60,7 +60,7 @@ let evaluateOperation operation left right = match operation with
   | "<" -> convertBoolToInt (left < right)
   | ">" -> convertBoolToInt (left > right)
   | "<=" -> convertBoolToInt (left <= right)
-  | ">=" -> convertBoolToInt (left => right)
+  | ">=" -> convertBoolToInt (left >= right)
   | "==" -> convertBoolToInt (left == right)
   | "!=" -> convertBoolToInt (left != right)
   | "&&" -> convertBoolToInt (convertIntToBool left && convertIntToBool right)
