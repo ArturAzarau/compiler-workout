@@ -41,7 +41,40 @@ module Expr =
        Takes a state and an expression, and returns the value of the expression in 
        the given state.
     *)
-    let eval _ = failwith "Not implemented yet"
+    (* Convert int to bool *)
+    let convertIntToBool value = value != 0
+
+    (* Convert bool to int *)
+    let convertBoolToInt value = if value then 1 else 0
+
+    (* Evaluate operation *)
+    let evaluateOperation operation left right = match operation with
+      | "+" -> left + right
+      | "-" -> left - right
+      | "*" -> left * right
+      | "/" -> left / right
+      | "%" -> left mod right
+      | "<" -> convertBoolToInt (left < right)
+      | ">" -> convertBoolToInt (left > right)
+      | "<=" -> convertBoolToInt (left <= right)
+      | ">=" -> convertBoolToInt (left >= right)
+      | "==" -> convertBoolToInt (left == right)
+      | "!=" -> convertBoolToInt (left != right)
+      | "&&" -> convertBoolToInt (convertIntToBool left && convertIntToBool right)
+      | "!!" -> convertBoolToInt (convertIntToBool left || convertIntToBool right)
+
+    (* Expression evaluator
+
+        val eval : state -> expr -> int
+    
+      Takes a state and an expression, and returns the value of the expression in 
+      the given state.
+    *)
+
+    let rec eval state expression = match expression with
+      | Const value -> value
+      | Var variable -> state variable
+      | Binop(operation, left, right) -> evaluateOperation operation (eval state left) (eval state right)
 
   end
                     
@@ -65,7 +98,13 @@ module Stmt =
 
        Takes a configuration and a statement, and returns another configuration
     *)
-    let eval _ = failwith "Not implemented yet"
+    let rec eval configuration statement = 
+      let (state, inputStream, outputStream) = configuration in
+      match statement with
+        | Read variable -> (match inputStream with value::left -> (Expr.update variable value state, left, outputStream))
+        | Write expression -> (state, inputStream, Expr.eval state expression :: outputStream)
+        | Assign (variable, expression) -> (Expr.update variable (Expr.eval state expression) state), inputStream, outputStream
+        | Seq (first, second) -> eval (eval configuration first) second
                                                          
   end
 

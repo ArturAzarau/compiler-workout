@@ -23,7 +23,22 @@ type config = int list * Syntax.Stmt.config
 
    Takes a configuration and a program, and returns a configuration as a result
  *)                         
-let eval _ = failwith "Not yet implemented"
+
+let evaluateInstruction statementConfiguration instruction =
+  let (stack, configuration) = statementConfiguration in
+  let (state, inputStream, outputStream) = configuration in
+
+  match instruction with
+    | BINOP operation -> (match stack with
+      | y::x::left -> [Syntax.Expr.evaluateOperation operation x y] @ left, configuration)
+    
+    | CONST value -> [value] @ stack, configuration
+    | READ -> (match inputStream with | input::left -> [input] @ stack, (state, left, outputStream))
+    | WRITE -> (match stack with | value::left -> left, (state, inputStream, outputStream @ [value]))
+    | LD variable -> [state variable] @ stack, configuration
+    | ST variable -> (match stack with value::left -> left, (Syntax.Expr.update variable value state, inputStream, outputStream))
+
+let eval configuration, programm = List.fold_left evaluateInstruction configuration programm
 
 (* Top-level evaluation
 
@@ -41,4 +56,13 @@ let run i p = let (_, (_, _, o)) = eval ([], (Syntax.Expr.empty, i, [])) p in o
    stack machine
  *)
 
-let compile _ = failwith "Not yet implemented"
+let rec compileExpression expression = match expression with
+  | Syntax.Expr.Const value -> [CONST value]
+  | Syntax.Expr.Var variable -> [LD variable]
+  | Syntax.Expr.Binop (operator, lhs, rhs) -> (compileExpression lhs) @ (compileExpression rhs) @ [BINOP operator]
+
+let compile statement = match statement with
+  | Syntax.Stmt.Read variable -> [READ; ST variable]
+  | Syntax.Stmt.Write expression -> (compileExpression expression) @ [WRITE]
+  | Syntax.Stmt.Assign (variable, expression) -> (compileExpression expression) @ [ST variable]
+  | Syntax.Stmt.Seq (first, second) -> (compile first) @ (compile second) 
