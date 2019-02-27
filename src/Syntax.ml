@@ -101,7 +101,8 @@ module Stmt =
     let rec eval configuration statement = 
       let (state, inputStream, outputStream) = configuration in
       match statement with
-        | Read variable -> (match inputStream with | value::left -> (Expr.update variable value state, left, outputStream))
+        | Read variable -> (match inputStream with 
+          | value::left -> (Expr.update variable value state, left, outputStream))
         | Write expression -> (state, inputStream, Expr.eval state expression :: outputStream)
         | Assign (variable, expression) -> (Expr.update variable (Expr.eval state expression) state), inputStream, outputStream
         | Seq (first, second) -> eval (eval configuration first) second;;
