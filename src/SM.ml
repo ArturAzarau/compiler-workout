@@ -36,7 +36,7 @@ let evaluateInstruction statementConfiguration instruction =
     | READ -> (match inputStream with | input::left -> [input] @ stack, (state, left, outputStream))
     | WRITE -> (match stack with | value::left -> left, (state, inputStream, outputStream @ [value]))
     | LD variable -> [state variable] @ stack, configuration
-    | ST variable -> (match stack with value::left -> left, (Syntax.Expr.update variable value state, inputStream, outputStream));;
+    | ST variable -> (match stack with | value::left -> left, (Syntax.Expr.update variable value state, inputStream, outputStream));;
 
 let eval configuration, programm = List.fold_left evaluateInstruction configuration programm
 
