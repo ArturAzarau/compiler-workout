@@ -30,18 +30,21 @@ let evaluateInstruction statementConfiguration instruction =
 
   match instruction with
     | BINOP operation -> (match stack with
-      | y::x::left -> [Syntax.Expr.evaluateOperation operation x y] @ left, configuration)
-    
+      | y::x::left -> [(Syntax.Expr.evaluateOperation operation) x y] @ left, configuration
+      | _ -> failwith("Error"))
     | CONST value -> [value] @ stack, configuration
     | READ -> (match inputStream with 
-      | input::left -> [input] @ stack, (state, left, outputStream))
+      | input::left -> [input] @ stack, (state, left, outputStream)
+      | _ -> failwith("Error"))
     | WRITE -> (match stack with 
-      | value::left -> left, (state, inputStream, outputStream @ [value]))
-    | LD variable -> [state variable] @ stack, configuration
+      | value::left -> left, (state, inputStream, outputStream @ [value])
+      | _ -> failwith("Error"))
+    | LD variable -> ([state variable] @ stack, configuration)
     | ST variable -> (match stack with 
-      | value::left -> left, (Syntax.Expr.update variable value state, inputStream, outputStream));;
+      | value::left -> (left, (Syntax.Expr.update variable value state, inputStream, outputStream))
+      | _ -> failwith("Error"));;
 
-let eval configuration, programm = List.fold_left evaluateInstruction configuration programm
+let eval configuration programm = List.fold_left evaluateInstruction configuration programm
 
 (* Top-level evaluation
 
@@ -64,7 +67,7 @@ let rec compileExpression expression = match expression with
   | Syntax.Expr.Var variable -> [LD variable]
   | Syntax.Expr.Binop (operator, lhs, rhs) -> (compileExpression lhs) @ (compileExpression rhs) @ [BINOP operator];;
 
-let compile statement = match statement with
+let rec compile statement = match statement with
   | Syntax.Stmt.Read variable -> [READ; ST variable]
   | Syntax.Stmt.Write expression -> (compileExpression expression) @ [WRITE]
   | Syntax.Stmt.Assign (variable, expression) -> (compileExpression expression) @ [ST variable]

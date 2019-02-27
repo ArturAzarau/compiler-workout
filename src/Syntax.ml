@@ -62,6 +62,7 @@ module Expr =
       | "!=" -> convertBoolToInt (left != right)
       | "&&" -> convertBoolToInt (convertIntToBool left && convertIntToBool right)
       | "!!" -> convertBoolToInt (convertIntToBool left || convertIntToBool right)
+      | _ -> failwith "Error";;
 
     (* Expression evaluator
 
@@ -74,7 +75,7 @@ module Expr =
     let rec eval state expression = match expression with
       | Const value -> value
       | Var variable -> state variable
-      | Binop(operation, left, right) -> evaluateOperation operation (eval state left) (eval state right)
+      | Binop(operation, left, right) -> evaluateOperation operation (eval state left) (eval state right);;
 
   end
                     
@@ -102,7 +103,7 @@ module Stmt =
       let (state, inputStream, outputStream) = configuration in
       match statement with
         | Read variable -> (match inputStream with 
-          | value::left -> (Expr.update variable value state, left, outputStream)
+          | value::left -> (Expr.update variable value state), left, outputStream
           | [] -> failwith "Empty input")
         | Write expression -> (state, inputStream, Expr.eval state expression :: outputStream)
         | Assign (variable, expression) -> (Expr.update variable (Expr.eval state expression) state), inputStream, outputStream
