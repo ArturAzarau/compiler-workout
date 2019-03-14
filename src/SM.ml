@@ -24,7 +24,27 @@ type config = int list * Stmt.config
 
    Takes a configuration and a program, and returns a configuration as a result
  *)                         
-let eval _ = failwith "Not yet implemented"
+let evaluateInstruction statementConfiguration instruction =
+  let (stack, configuration) = statementConfiguration in
+  let (state, inputStream, outputStream) = configuration in
+
+  match instruction with
+    | BINOP operation -> (match stack with
+      | y::x::left -> [(Language.Expr.evaluateOperation operation) x y] @ left, configuration
+      | _ -> failwith("Error"))
+    | CONST value -> [value] @ stack, configuration
+    | READ -> (match inputStream with 
+      | input::left -> [input] @ stack, (state, left, outputStream)
+      | _ -> failwith("Error"))
+    | WRITE -> (match stack with 
+      | value::left -> left, (state, inputStream, outputStream @ [value])
+      | _ -> failwith("Error"))
+    | LD variable -> ([state variable] @ stack, configuration)
+    | ST variable -> (match stack with 
+      | value::left -> (left, (Language.Expr.update variable value state, inputStream, outputStream))
+      | _ -> failwith("Error"));;
+
+let eval configuration programm = List.fold_left evaluateInstruction configuration programm
 
 (* Top-level evaluation
 
@@ -41,4 +61,13 @@ let run p i = let (_, (_, _, o)) = eval ([], (Language.Expr.empty, i, [])) p in 
    Takes a program in the source language and returns an equivalent program for the
    stack machine
  *)
-let compile _ = failwith "Not yet implemented"
+let rec compileExpression expression = match expression with
+  | Language.Expr.Const value -> [CONST value]
+  | Language.Expr.Var variable -> [LD variable]
+  | Language.Expr.Binop (operator, lhs, rhs) -> (compileExpression lhs) @ (compileExpression rhs) @ [BINOP operator];;
+
+let rec compile statement = match statement with
+  | Language.Stmt.Read variable -> [READ; ST variable]
+  | Language.Stmt.Write expression -> (compileExpression expression) @ [WRITE]
+  | Language.Stmt.Assign (variable, expression) -> (compileExpression expression) @ [ST variable]
+  | Language.Stmt.Seq (first, second) -> (compile first) @ (compile second);;
