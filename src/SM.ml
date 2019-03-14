@@ -72,9 +72,3 @@ let rec compile =
   | Stmt.Read x        -> [READ; ST x]
   | Stmt.Write e       -> expr e @ [WRITE]
   | Stmt.Assign (x, e) -> expr e @ [ST x]
-
-let rec compile statement = match statement with
-  | Language.Stmt.Read variable -> [READ; ST variable]
-  | Language.Stmt.Write expression -> (compileExpression expression) @ [WRITE]
-  | Language.Stmt.Assign (variable, expression) -> (compileExpression expression) @ [ST variable]
-  | Language.Stmt.Seq (first, second) -> (compile first) @ (compile second);;
