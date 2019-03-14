@@ -23,8 +23,28 @@ type config = int list * Stmt.config
      val eval : config -> prg -> config
 
    Takes a configuration and a program, and returns a configuration as a result
-*)                         
-let rec eval conf prog = failwith "Not yet implemented"
+ *)                         
+let evaluateInstruction statementConfiguration instruction =
+  let (stack, configuration) = statementConfiguration in
+  let (state, inputStream, outputStream) = configuration in
+
+  match instruction with
+    | BINOP operation -> (match stack with
+      | y::x::left -> [(Language.Expr.evaluateOperation operation) x y] @ left, configuration
+      | _ -> failwith("Error"))
+    | CONST value -> [value] @ stack, configuration
+    | READ -> (match inputStream with 
+      | input::left -> [input] @ stack, (state, left, outputStream)
+      | _ -> failwith("Error"))
+    | WRITE -> (match stack with 
+      | value::left -> left, (state, inputStream, outputStream @ [value])
+      | _ -> failwith("Error"))
+    | LD variable -> ([state variable] @ stack, configuration)
+    | ST variable -> (match stack with 
+      | value::left -> (left, (Language.Expr.update variable value state, inputStream, outputStream))
+      | _ -> failwith("Error"));;
+
+let eval configuration programm = List.fold_left evaluateInstruction configuration programm
 
 (* Top-level evaluation
 
@@ -52,3 +72,9 @@ let rec compile =
   | Stmt.Read x        -> [READ; ST x]
   | Stmt.Write e       -> expr e @ [WRITE]
   | Stmt.Assign (x, e) -> expr e @ [ST x]
+
+let rec compile statement = match statement with
+  | Language.Stmt.Read variable -> [READ; ST variable]
+  | Language.Stmt.Write expression -> (compileExpression expression) @ [WRITE]
+  | Language.Stmt.Assign (variable, expression) -> (compileExpression expression) @ [ST variable]
+  | Language.Stmt.Seq (first, second) -> (compile first) @ (compile second);;

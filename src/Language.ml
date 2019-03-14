@@ -1,6 +1,3 @@
-(* Opening a library for generic programming (https://github.com/dboulytchev/GT).
-   The library provides "@type ..." syntax extension and plugins like show, etc.
-*)
 open GT
 
 (* Opening a library for combinator-based syntax analysis *)
@@ -37,14 +34,41 @@ module Expr =
     *)
     let update x v s = fun y -> if x = y then v else s y
 
+    (* Convert int to bool *)
+    let convertIntToBool value = value != 0;;
+
+    (* Convert bool to int *)
+    let convertBoolToInt value = if value then 1 else 0;;
+
+    (* Evaluate operation *)
+    let evaluateOperation operation left right = match operation with
+      | "+" -> left + right
+      | "-" -> left - right
+      | "*" -> left * right
+      | "/" -> left / right
+      | "%" -> left mod right
+      | "<" -> convertBoolToInt (left < right)
+      | ">" -> convertBoolToInt (left > right)
+      | "<=" -> convertBoolToInt (left <= right)
+      | ">=" -> convertBoolToInt (left >= right)
+      | "==" -> convertBoolToInt (left == right)
+      | "!=" -> convertBoolToInt (left != right)
+      | "&&" -> convertBoolToInt (convertIntToBool left && convertIntToBool right)
+      | "!!" -> convertBoolToInt (convertIntToBool left || convertIntToBool right)
+      | _ -> failwith "Error";;
+
     (* Expression evaluator
 
           val eval : state -> t -> int
  
        Takes a state and an expression, and returns the value of the expression in 
        the given state.
-     *)                                                       
-    let eval _ _ = failwith "Not yet implemented"
+    *)
+    let rec eval state expression = match expression with
+      | Const value -> value
+      | Var variable -> state variable
+      | Binop(operation, left, right) -> evaluateOperation operation (eval state left) (eval state right);;
+
 
     (* Expression parser. You can use the following terminals:
 
@@ -52,8 +76,25 @@ module Expr =
          DECIMAL --- a decimal constant [0-9]+ as a string
                                                                                                                   
     *)
-    ostap (                                      
-      parse: empty {failwith "Not yet implemented"}
+
+    let parseBinOperator operator = ostap(- $(operator)), (fun left right -> Binop(operator, left, right))
+
+    ostap (
+      expr:
+        !(Ostap.Util.expr(fun x -> x)
+          (Array.map (fun (asc, ops) -> asc, List.map parseBinOperator ops)
+          [|
+              `Lefta, ["!!"];
+              `Lefta, ["&&"];
+              `Nona, ["<="; "<"; ">="; ">"; "=="; "!="];
+              `Lefta, ["+"; "-"];
+              `Lefta, ["*"; "/"; "%"];
+          
+          |]
+          )
+          primary
+        );
+        primary: variable:IDENT { Var variable } | const: DECIMAL { Const const } | -"(" expr -")"
     )
     
   end
@@ -78,13 +119,25 @@ module Stmt =
 
        Takes a configuration and a statement, and returns another configuration
     *)
-    let eval _ _ = failwith "Not yet implemented"
+    let rec eval configuration statement = 
+      let (state, inputStream, outputStream) = configuration in
+      match statement with
+        | Read variable -> (match inputStream with 
+          | value::left -> (Expr.update variable value state), left, outputStream
+          | [] -> failwith "Empty input")
+        | Write expression -> (state, inputStream, Expr.eval state expression :: outputStream)
+        | Assign (variable, expression) -> (Expr.update variable (Expr.eval state expression) state), inputStream, outputStream
+        | Seq (first, second) -> eval (eval configuration first) second;;
 
     (* Statement parser *)
-    ostap (
-      parse: empty {failwith "Not yet implemented"}
-    )
-      
+    
+      ostap (
+	      statement:
+	        x:IDENT ":=" e:!(Expr.expr)         {Assign (x, e)}
+	        | "read"  "("  x:IDENT        ")"   {Read x}
+	        | "write" "("  e:!(Expr.expr) ")"   {Write e};
+	      parse: l:statement ";" rest:parse {Seq (l, rest)} | statement
+	    )
   end
 
 (* The top-level definitions *)
