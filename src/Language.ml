@@ -313,7 +313,7 @@ module Expr =
 	                                        | _ -> build_index_sequence arr inds};
 	    primary:
 	      ixd:(arr:indexed len_opt:".length"? {match len_opt with | Some _ -> Length arr | None -> arr}) str_opt:".string"? {match str_opt with | Some _ -> Call (".string", [ixd]) | None -> ixd}
-    
+    )
   end
                     
 (* Simple statements: syntax and sematics *)
