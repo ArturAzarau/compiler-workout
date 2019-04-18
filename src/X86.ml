@@ -192,7 +192,7 @@ let rec list_init iter n f =
 	  else []
 
 (* Environment implementation *)
-let make_assoc l = List.combine l (List.init 0 (List.length l) (fun x -> x))
+let make_assoc l = List.combine l (list.init 0 (List.length l) (fun x -> x))
                      
 class env =
   object (self)
