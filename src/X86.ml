@@ -91,9 +91,6 @@ open SM
    of x86 instructions
 *)
 
-(* Environment implementation *)
-let make_assoc l = List.combine l (List.init (List.length l) (fun x -> x))
-
 let compile_binop op loc_x loc_y loc_r =
   let y2a_compute_send comp = [Mov (loc_y, eax)] @ comp @ [Mov (eax, loc_r)] in
   let compareyx_single_send flag = [Mov (loc_y, eax); Binop ("-", loc_x, eax);
