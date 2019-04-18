@@ -46,7 +46,8 @@ module Value =
 
     let update_string s i x = Bytes.set s i x; s 
     let update_array  a i x = a.(i) <- x; a
-                      
+
+end                
   
   
 let to_list = function
