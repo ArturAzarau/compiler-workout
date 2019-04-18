@@ -225,7 +225,7 @@ let rec list_init_helper i acc len f =
 	
 
 (* Environment implementation *)
-let make_assoc l = List.combine l (list.init (List.length l) (fun x -> x))
+let make_assoc l = List.combine l (list_init (List.length l) (fun x -> x))
                      
 class env =
   object (self)
