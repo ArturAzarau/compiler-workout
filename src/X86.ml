@@ -244,9 +244,6 @@ class env =
     (* gets all global variables *)      
     method globals = S.elements globals
 
-    (* gets all string definitions *)      
-    method strings = M.bindings stringm
-
     (* gets a number of stack positions allocated *)
     method allocated = stack_slots                                
                                 
